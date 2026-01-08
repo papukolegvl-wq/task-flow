@@ -29,17 +29,35 @@ const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
     { value: 'critical', label: 'Критичный' },
 ];
 
+const quillModules = {
+    toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['link', 'clean']
+    ],
+};
+
+const quillFormats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet',
+    'link'
+];
+
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, taskId }) => {
     const { tasks, createTask, updateTask, deleteTask, createSubtask, deleteSubtask, addDependency, removeDependency, getSubtasks } = useTaskStore();
     const existingTask = taskId ? tasks.find((t) => t.id === taskId) : null;
 
-    const [title, setTitle] = useState(existingTask?.title || '');
-    const [description, setDescription] = useState(existingTask?.description || '');
-    const [status, setStatus] = useState<TaskStatus>(existingTask?.status || 'backlog');
-    const [priority, setPriority] = useState<Priority>(existingTask?.priority || 'medium');
-    const [dueDate, setDueDate] = useState(existingTask?.dueDate?.split('T')[0] || '');
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [status, setStatus] = useState<TaskStatus>('backlog');
+    const [priority, setPriority] = useState<Priority>('medium');
+    const [dueDate, setDueDate] = useState('');
     const [tagInput, setTagInput] = useState('');
-    const [tags, setTags] = useState<string[]>(existingTask?.tags || []);
+    const [tags, setTags] = useState<string[]>([]);
 
     // Subtask state
     const [subtaskTitle, setSubtaskTitle] = useState('');
@@ -48,44 +66,102 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, taskId })
     // Dependency state
     const [selectedDependency, setSelectedDependency] = useState('');
 
-    const quillModules = {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            ['link', 'clean']
-        ],
-    };
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [draftStatus, setDraftStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const draftKey = taskId ? `draft-${taskId}` : 'draft-new';
 
-    const quillFormats = [
-        'header',
-        'bold', 'italic', 'underline', 'strike',
-        'color', 'background',
-        'list', 'bullet',
-        'link'
-    ];
-
+    // Reset state when modal opens or taskId changes
     React.useEffect(() => {
-        if (existingTask) {
-            setTitle(existingTask.title);
-            setDescription(existingTask.description || ''); // Ensure string
-            setStatus(existingTask.status);
-            setPriority(existingTask.priority);
-            setDueDate(existingTask.dueDate?.split('T')[0] || '');
-            setTags(existingTask.tags);
-        } else {
+        if (!isOpen) {
+            setIsInitialized(false);
+            return;
+        }
+
+        console.log('[TaskModal] Opening. TaskId:', taskId);
+        setIsInitialized(false);
+        setDraftStatus('idle');
+
+        // Try to load draft first
+        const loadState = () => {
+            // 1. Try local storage draft
+            const draft = localStorage.getItem(draftKey);
+            if (draft) {
+                try {
+                    const parsedDraft = JSON.parse(draft);
+                    console.log('[TaskModal] Found draft:', parsedDraft);
+                    setTitle(parsedDraft.title || '');
+                    setDescription(parsedDraft.description || ''); // Keep as HTML string for Quill
+                    setStatus(parsedDraft.status || 'backlog');
+                    setPriority(parsedDraft.priority || 'medium');
+                    setDueDate(parsedDraft.dueDate || '');
+                    setTags(parsedDraft.tags || []);
+                    setIsInitialized(true);
+                    return;
+                } catch (e) {
+                    console.error('[TaskModal] Error parsing draft:', e);
+                }
+            }
+
+            // 2. If no draft, load from existing task
+            if (taskId && existingTask) {
+                console.log('[TaskModal] Loading existing task:', existingTask);
+                setTitle(existingTask.title);
+                setDescription(existingTask.description || '');
+                setStatus(existingTask.status);
+                setPriority(existingTask.priority);
+                setDueDate(existingTask.dueDate?.split('T')[0] || '');
+                setTags(existingTask.tags);
+                setIsInitialized(true);
+                return;
+            }
+
+            // 3. Defaults for new task
+            console.log('[TaskModal] New task defaults');
             setTitle('');
             setDescription('');
             setStatus('backlog');
             setPriority('medium');
             setDueDate('');
             setTags([]);
+            setIsInitialized(true);
+        };
+
+        loadState();
+
+    }, [isOpen, taskId]); // Only run when modal opens or ID changes. Remove existingTask from deps to prevent overrides.
+
+    // Auto-save effect
+    React.useEffect(() => {
+        if (!isOpen || !isInitialized) return;
+
+        setDraftStatus('saving');
+
+        try {
+            const saveData = {
+                title,
+                description,
+                status,
+                priority,
+                dueDate,
+                tags
+            };
+
+            // Save to local draft immediately
+            localStorage.setItem(draftKey, JSON.stringify(saveData));
+
+            // Artificial delay for "saving" visual if needed, or just set saved immediately
+            // Using a short timeout to make the "Saving..." text visible ensures user confidence
+            const timer = setTimeout(() => {
+                setDraftStatus('saved');
+            }, 500);
+
+            return () => clearTimeout(timer);
+        } catch (error) {
+            console.error('[TaskModal] Failed to save draft', error);
+            setDraftStatus('error');
         }
-        setShowSubtaskInput(false);
-        setSubtaskTitle('');
-        setSelectedDependency('');
-    }, [existingTask, isOpen]);
+
+    }, [title, description, status, priority, dueDate, tags, isOpen, isInitialized, draftKey]);
 
     const handleSave = () => {
         const taskData: Partial<Task> = {
@@ -102,6 +178,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, taskId })
         } else {
             createTask(taskData);
         }
+        console.log('[TaskModal] Saving and clearing draft:', draftKey);
+        localStorage.removeItem(draftKey);
 
         onClose();
     };
@@ -165,15 +243,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, taskId })
 
                 <div className="form-group">
                     <label>Описание</label>
-                    <ReactQuill
-                        theme="snow"
-                        value={description}
-                        onChange={setDescription}
-                        modules={quillModules}
-                        formats={quillFormats}
-                        placeholder="Опишите задачу подробнее..."
-                        className="description-editor"
-                    />
+                    {isInitialized ? (
+                        <ReactQuill
+                            key={taskId || 'new-task'}
+                            theme="snow"
+                            value={description}
+                            onChange={setDescription}
+                            modules={quillModules}
+                            formats={quillFormats}
+                            placeholder="Опишите задачу подробнее..."
+                            className="description-editor"
+                        />
+                    ) : (
+                        <div className="textarea" style={{ minHeight: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)' }}>
+                            Загрузка редактора...
+                        </div>
+                    )}
                 </div>
 
                 <div className="form-row">
@@ -343,6 +428,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, taskId })
                         </Button>
                     )}
                     <div className="modal-actions-right">
+                        {draftStatus === 'saved' && <span className="draft-status success">Черновик сохранен</span>}
+                        {draftStatus === 'saving' && <span className="draft-status saving">Сохранение...</span>}
+                        {draftStatus === 'error' && <span className="draft-status error">Ошибка сохранения</span>}
                         <Button variant="secondary" onClick={onClose}>
                             Отмена
                         </Button>
