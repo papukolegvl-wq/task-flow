@@ -1,0 +1,341 @@
+/* Density Variables */
+.task-list {
+    --item-padding-y: 0.5rem;
+    --item-margin-bottom: 0.5rem;
+    --item-font-size: 0.938rem;
+    --item-height: auto;
+}
+
+.task-list[data-density="relaxed"] {
+    --item-padding-y: 0.75rem;
+    --item-margin-bottom: 0.75rem;
+    --item-font-size: 1rem;
+}
+
+.task-list[data-density="normal"] {
+    --item-padding-y: 0.5rem;
+    --item-margin-bottom: 0.5rem;
+    --item-font-size: 0.938rem;
+}
+
+.task-list[data-density="compact"] {
+    --item-padding-y: 0.25rem;
+    --item-margin-bottom: 0.25rem;
+    --item-font-size: 0.875rem;
+    --item-height: 2rem;
+}
+
+.task-item {
+    background-color: var(--color-bg-card);
+    background: linear-gradient(to bottom, #1f2937, #111827);
+    border: 1px solid rgba(75, 85, 99, 0.4);
+    border-left-width: 4px;
+    border-radius: 0.5rem;
+
+    padding: var(--item-padding-y) 0.75rem;
+    margin-bottom: var(--item-margin-bottom);
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+
+    /* Layout */
+    display: flex;
+    align-items: flex-start;
+    /* Aligns checkbox to top for multi-line tasks */
+}
+
+.task-item.selected {
+    background: linear-gradient(to bottom, #1f2937, #1e293b);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+    /* Highlight border */
+}
+
+/* Priority Accents - Softer Colors */
+.task-priority-low {
+    border-left-color: #cbd5e1;
+    /* slate-300 */
+}
+
+.task-priority-medium {
+    border-left-color: #93c5fd;
+    /* blue-300 */
+}
+
+.task-priority-high {
+    border-left-color: #fdba74;
+    /* orange-300 */
+}
+
+.task-priority-critical {
+    border-left-color: #fca5a5;
+    /* red-300 */
+    background-color: rgba(254, 226, 226, 0.3);
+    /* very subtle red tint */
+}
+
+.task-item:hover {
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.task-item-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 2;
+}
+
+/* Tree Connectors */
+.task-tree-connector {
+    position: absolute;
+    top: -1.25rem;
+    /* Connect to previous item or parent */
+    left: -1.25rem;
+    width: 1.25rem;
+    height: 2.5rem;
+    /* Extend down to current item center */
+    border-left: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border);
+    border-bottom-left-radius: 8px;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Hide vertical line part for first items if we want, but usually tree lines are relative.
+   Here, since we use margin-left on the ITEM itself, the connector is relative to the item.
+   The vertical line needs to go UP to the parent's level.
+*/
+
+/* Expand Button & Placeholder */
+.task-expand-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+}
+
+.task-expand-btn:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.task-expand-placeholder {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+/* Status Icons */
+.task-status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.task-status-backlog {
+    color: var(--status-backlog);
+}
+
+.task-status-in_progress {
+    color: var(--status-in-progress);
+}
+
+.task-status-waiting {
+    color: var(--status-waiting);
+}
+
+.task-status-done {
+    color: var(--status-done);
+}
+
+.task-status-blocked {
+    color: var(--status-blocked);
+}
+
+.task-status-canceled {
+    color: #6b7280;
+}
+
+.task-item-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.task-title {
+    margin: 0;
+    font-size: 0.938rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    line-height: 1.4;
+}
+
+.task-badges {
+    display: flex;
+    gap: 0.375rem;
+    flex-shrink: 0;
+}
+
+.task-description {
+    margin: 0 0 0.5rem;
+    font-size: 0.813rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.task-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+/* Fix recursive rendering container */
+.task-subtasks-container {
+    position: relative;
+    /* This creates the continuous vertical line for children */
+}
+
+/* ... previous styles ... */
+
+/* Checkbox */
+/* Checkbox */
+.task-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-border);
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    /* Button reset */
+    background: transparent;
+    padding: 0;
+
+    /* Visibility */
+    z-index: 20;
+    position: relative;
+    margin-top: 0.125rem;
+
+    opacity: 0.4;
+    /* Visible but dimmed when unchecked */
+}
+
+.task-item:hover .task-checkbox,
+.task-checkbox:hover,
+.task-checkbox:focus,
+/* Accessibility */
+.task-checkbox.checked {
+    opacity: 1;
+}
+
+.task-checkbox:hover {
+    border-color: var(--color-accent);
+    background-color: var(--color-bg-secondary);
+}
+
+.task-checkbox.checked {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    opacity: 1;
+}
+
+.checkbox-icon {
+    color: white;
+}
+
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+    position: sticky;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    margin-bottom: 1rem;
+    animation: slideUp 0.3s ease;
+    border-left: 4px solid var(--color-accent);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.bulk-actions-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.bulk-count {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.bulk-clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.bulk-clear-btn:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
